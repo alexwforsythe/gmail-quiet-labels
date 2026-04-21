@@ -1,0 +1,22 @@
+{
+  "timeZone": "America/Los_Angeles",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "addOns": {
+    "common": {
+      "name": "QuietLabels",
+      "logoUrl": "https://fonts.gstatic.com/s/i/googlematerialicons/archive/v6/black-24dp/1x/gm_archive_black_24dp.png"
+    },
+    "gmail": {
+      "homepageTrigger": {
+        "runFunction": "onHomepageTrigger",
+        "enabled": true
+      }
+    }
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/script.scriptapp"
+  ]
+}
