@@ -20,6 +20,13 @@ export default [
           varsIgnorePattern: '^_',
         },
       ],
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'Logger',
+          message: "Do not use 'Base.Logger'. Use 'Log' instead.",
+        },
+      ],
     },
   },
 ];
