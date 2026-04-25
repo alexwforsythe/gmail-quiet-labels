@@ -1,3 +1,138 @@
-export function buildHomepage(_userLocale?: string) {
-  return CardService.newCardBuilder().setName('Settings').build();
+import {
+  handleChangeEnableTimerTrigger,
+  handleChangeExcludeImportant,
+  handleChangeExcludeRead,
+  handleChangeIntervalHours,
+  handleChangeLabelId,
+  handleClickRunNow,
+} from './actions';
+import { defaultEvaluationIntervalHours, loadProps } from './properties';
+
+const aboutLink =
+  'https://github.com/alexwforsythe/gmail-quiet-labels/blob/main/README.md';
+const evaluationIntervalsHours = [1, 6, defaultEvaluationIntervalHours, 24];
+
+export function buildHomepage(userLocale?: string) {
+  const { settings } = loadProps();
+
+  // Label selection
+  const labelSelect = CardService.newSelectionInput()
+    .setType(CardService.SelectionInputType.DROPDOWN)
+    .setTitle('Match threads with label')
+    .setFieldName('labelId')
+    .setOnChangeAction(
+      CardService.newAction().setFunctionName(handleChangeLabelId.name),
+    );
+  const userLabels = GmailApp.getUserLabels().sort((a, b) =>
+    a.getName().localeCompare(b.getName(), userLocale),
+  );
+  userLabels.forEach((l) => {
+    labelSelect.addItem(l.getName(), l.getId(), l.getId() === settings.labelId);
+  });
+
+  // Interval selection
+  const intervalSelect = CardService.newSelectionInput()
+    .setType(CardService.SelectionInputType.DROPDOWN)
+    .setTitle('Archive matching threads every')
+    .setFieldName('intervalHours')
+    .setOnChangeAction(
+      CardService.newAction().setFunctionName(handleChangeIntervalHours.name),
+    );
+  evaluationIntervalsHours.forEach((h) => {
+    intervalSelect.addItem(
+      `${h} hour${h > 1 ? 's' : ''}`,
+      h.toString(),
+      h === settings.intervalHours,
+    );
+  });
+
+  return (
+    CardService.newCardBuilder()
+      .setHeader(
+        CardService.newCardHeader()
+          .setTitle('Settings')
+          .setImageUrl(
+            'https://www.gstatic.com/images/icons/material/system/1x/settings_black_48dp.png',
+          ),
+      )
+      .addCardAction(
+        CardService.newCardAction()
+          .setText('About')
+          .setOpenLink(CardService.newOpenLink().setUrl(aboutLink)),
+      )
+      // .addCardAction(
+      //   CardService.newCardAction()
+      //     .setText('Clear state')
+      //     .setOnClickAction(
+      //       CardService.newAction().setFunctionName(handleClickClearState.name),
+      //     ),
+      // )
+      .addSection(
+        CardService.newCardSection()
+          .setHeader('Filter')
+          .addWidget(labelSelect)
+          .addWidget(
+            CardService.newDecoratedText()
+              .setText('Exclude read messages')
+              .setSwitchControl(
+                CardService.newSwitch()
+                  .setFieldName('excludeRead')
+                  .setValue('true')
+                  .setSelected(settings.excludeRead)
+                  .setOnChangeAction(
+                    CardService.newAction().setFunctionName(
+                      handleChangeExcludeRead.name,
+                    ),
+                  ),
+              ),
+          )
+          .addWidget(
+            CardService.newDecoratedText()
+              .setText('Exclude important messages')
+              .setSwitchControl(
+                CardService.newSwitch()
+                  .setFieldName('excludeImportant')
+                  .setValue('true')
+                  .setSelected(settings.excludeImportant)
+                  .setOnChangeAction(
+                    CardService.newAction().setFunctionName(
+                      handleChangeExcludeImportant.name,
+                    ),
+                  ),
+              ),
+          ),
+      )
+      .addSection(
+        CardService.newCardSection()
+          .setHeader('Schedule')
+          .addWidget(
+            CardService.newDecoratedText()
+              .setText('Enabled')
+              .setSwitchControl(
+                CardService.newSwitch()
+                  .setFieldName('enableTimerTrigger')
+                  .setValue('true')
+                  .setSelected(settings.enableTimerTrigger)
+                  .setOnChangeAction(
+                    CardService.newAction().setFunctionName(
+                      handleChangeEnableTimerTrigger.name,
+                    ),
+                  ),
+              ),
+          )
+          .addWidget(intervalSelect),
+      )
+      .setFixedFooter(
+        CardService.newFixedFooter().setPrimaryButton(
+          CardService.newTextButton()
+            .setText('Run now')
+            .setOnClickAction(
+              CardService.newAction()
+                .setFunctionName(handleClickRunNow.name)
+                .addRequiredWidget('labelId'),
+            ),
+        ),
+      )
+      .build()
+  );
 }
