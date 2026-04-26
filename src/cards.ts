@@ -13,7 +13,7 @@ const aboutLink =
 const evaluationIntervalsHours = [1, 6, defaultEvaluationIntervalHours, 24];
 
 export function buildHomepage(userLocale: string | undefined) {
-  const { settings } = loadProps();
+  const { settings, state } = loadProps();
 
   // Label selection
   const labelSelect = CardService.newSelectionInput()
@@ -121,6 +121,32 @@ export function buildHomepage(userLocale: string | undefined) {
               ),
           )
           .addWidget(intervalSelect),
+      )
+      .addSection(
+        CardService.newCardSection()
+          .setHeader('Threads archived')
+          .addWidget(
+            CardService.newDecoratedText()
+              .setTopLabel(
+                'Last run - ' +
+                  (state.lastRunMs
+                    ? new Date(state.lastRunMs).toLocaleString(userLocale, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric',
+                      })
+                    : 'Never'),
+              )
+              .setText(
+                state.lastRunMs ? state.lastRunArchivedCount.toString() : '–',
+              ),
+          )
+          .addWidget(
+            CardService.newDecoratedText()
+              .setTopLabel('All time')
+              .setText(state.totalArchivedCount.toString()),
+          ),
       )
       .setFixedFooter(
         CardService.newFixedFooter().setPrimaryButton(

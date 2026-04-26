@@ -17,6 +17,8 @@ export interface Settings {
 
 export interface State {
   lastRunMs: number;
+  lastRunArchivedCount: number;
+  totalArchivedCount: number;
 }
 
 export interface Properties {
@@ -53,7 +55,12 @@ export function loadProps(): Properties {
       intervalHours: defaultEvaluationIntervalHours,
       ...(settings && JSON.parse(settings)),
     },
-    state: state ? JSON.parse(state) : { lastRunMs: 0 },
+    state: {
+      lastRunMs: 0,
+      lastRunArchivedCount: 0,
+      totalArchivedCount: 0,
+      ...(state && JSON.parse(state)),
+    },
   };
   Log.debug('Loaded props', { props });
   return props;
