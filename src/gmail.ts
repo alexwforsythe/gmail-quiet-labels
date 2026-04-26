@@ -45,9 +45,20 @@ export function archiveThreads() {
       archivedCount,
       remaining: threads.length - archivedCount,
     });
+
+    // @todo dedupe saveState if only 1 batch?
+    saveState({
+      lastRunMs: state.lastRunMs,
+      lastRunArchivedCount: state.lastRunArchivedCount + archivedCount,
+      totalArchivedCount: state.totalArchivedCount + archivedCount,
+    });
   }
 
-  saveState({ lastRunMs: nowMs });
+  saveState({
+    lastRunMs: nowMs,
+    lastRunArchivedCount: threads.length,
+    totalArchivedCount: state.totalArchivedCount + threads.length,
+  });
 
   return `Archived ${threads.length} threads`;
 }
