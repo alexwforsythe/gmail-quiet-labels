@@ -1,3 +1,7 @@
+---
+layout: page
+---
+
 # Contributing
 
 1. Install dependencies:
