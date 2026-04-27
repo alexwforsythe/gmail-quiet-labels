@@ -8,8 +8,7 @@ import {
 } from './actions';
 import { defaultEvaluationIntervalHours, loadProps } from './properties';
 
-const aboutLink =
-  'https://github.com/alexwforsythe/gmail-quiet-labels/blob/main/README.md';
+const aboutLink = 'https://www.alexwforsythe.com/gmail-quiet-labels/';
 const evaluationIntervalsHours = [1, 6, defaultEvaluationIntervalHours, 24];
 
 export function buildHomepage(userLocale: string | undefined) {
