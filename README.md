@@ -46,7 +46,9 @@ then archiving them. This happens:
 > ℹ️ To avoid issues with very large inboxes, the add-on will only clean up
 > replies from the past 1 month on its first run. Future runs will clean up all
 > new replies.
->
+
+![screenshot](assets/images/screenshot.png)
+
 > ⚠️ If you receive thousands of emails a day, this add-on may not be able to
 > keep up.
 
