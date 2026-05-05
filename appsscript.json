@@ -5,7 +5,7 @@
   "addOns": {
     "common": {
       "name": "QuietLabels",
-      "logoUrl": "https://www.alexwforsythe.com/gmail-quiet-labels/assets/images/quiet-labels-logo.svg"
+      "logoUrl": "https://www.alexwforsythe.com/gmail-quiet-labels/assets/images/logo.svg"
     },
     "gmail": {
       "homepageTrigger": {
