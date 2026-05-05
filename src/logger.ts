@@ -1,3 +1,18 @@
+const actionsByFunctionName: Record<string, string> = {
+  // GmailApp
+  getUserLabels: 'get user labels',
+  search: 'search threads',
+  moveThreadsToArchive: 'archive threads',
+  // PropertiesService
+  setProperty: 'set user settings',
+  getProperties: 'get user settings',
+  deleteProperty: 'clear user state',
+  // ScriptApp
+  newTrigger: 'create trigger',
+  getProjectTriggers: 'get triggers',
+  deleteTrigger: 'delete trigger',
+};
+
 enum Level {
   DEBUG = 'debug',
   INFO = 'info',
@@ -43,4 +58,36 @@ export default class Log {
       stack: err.stack,
     });
   }
+}
+
+export function withErrorLogging<T extends object>(target: T) {
+  return new Proxy(target, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value !== 'function') {
+        return value;
+      }
+
+      return function (this: unknown, ...args: unknown[]) {
+        try {
+          const res = value.apply(this === receiver ? target : this, args);
+          return res instanceof Promise
+            ? res.catch((err) => logAndRethrowError(err, prop))
+            : res;
+        } catch (err) {
+          logAndRethrowError(err, prop);
+        }
+      };
+    },
+  });
+}
+
+function logAndRethrowError(cause: unknown, prop: string | symbol) {
+  const propName = prop.toString();
+  const err = new Error(
+    `Unable to ${actionsByFunctionName[propName] ?? 'perform action'}`,
+    { cause },
+  );
+  Log.error(err);
+  throw err;
 }

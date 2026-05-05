@@ -1,4 +1,4 @@
-import Log from './logger';
+import Log, { withErrorLogging } from './logger';
 
 export const settingsKey = 'USER_SETTINGS';
 export const stateKey = 'USER_STATE';
@@ -26,26 +26,29 @@ export interface Properties {
   state: State;
 }
 
+// eslint-disable-next-line no-restricted-globals
+const UserProperties = withErrorLogging(PropertiesService.getUserProperties());
+
 export function saveSettings(settings: Settings) {
   const val = JSON.stringify(settings);
-  PropertiesService.getUserProperties().setProperty(settingsKey, val);
+  UserProperties.setProperty(settingsKey, val);
   Log.info('Saved settings', { settings });
 }
 
 export function saveState(state: State) {
   const val = JSON.stringify(state);
-  PropertiesService.getUserProperties().setProperty(stateKey, val);
+  UserProperties.setProperty(stateKey, val);
   Log.info('Saved state', { state });
 }
 
 export function clearState() {
-  PropertiesService.getUserProperties().deleteProperty(stateKey);
+  UserProperties.deleteProperty(stateKey);
   Log.info('Cleared state');
 }
 
 export function loadProps(): Properties {
   const { [settingsKey]: settings, [stateKey]: state } =
-    PropertiesService.getUserProperties().getProperties();
+    UserProperties.getProperties();
   const props = {
     settings: {
       labelId: '',

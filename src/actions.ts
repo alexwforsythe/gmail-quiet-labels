@@ -1,7 +1,10 @@
 import { buildHomepage } from './cards';
 import { archiveThreads } from './gmail';
-import Log from './logger';
+import Log, { withErrorLogging } from './logger';
 import { clearState, loadProps, saveSettings } from './properties';
+
+// eslint-disable-next-line no-restricted-globals
+const Script = withErrorLogging(ScriptApp);
 
 export function handleClickClearState(e: GoogleAppsScript.Addons.EventObject) {
   clearState();
@@ -129,12 +132,12 @@ export function handleChangeEnableTimerTrigger(
     return buildHomepageResponse(e.commonEventObject.userLocale);
   }
 
-  ScriptApp.getProjectTriggers()
+  Script.getProjectTriggers()
     .filter((t) => t.getHandlerFunction() === archiveThreads.name)
-    .forEach(ScriptApp.deleteTrigger);
+    .forEach(Script.deleteTrigger);
 
   if (enableTimerTrigger) {
-    ScriptApp.newTrigger(archiveThreads.name)
+    Script.newTrigger(archiveThreads.name)
       .timeBased()
       .everyHours(settings.intervalHours)
       .create();

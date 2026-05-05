@@ -6,6 +6,7 @@ import {
   handleChangeLabelId,
   handleClickRunNow,
 } from './actions';
+import { Gmail } from './gmail';
 import { defaultEvaluationIntervalHours, loadProps } from './properties';
 
 const aboutLink = 'https://www.alexwforsythe.com/gmail-quiet-labels/';
@@ -22,7 +23,7 @@ export function buildHomepage(userLocale: string | undefined) {
     .setOnChangeAction(
       CardService.newAction().setFunctionName(handleChangeLabelId.name),
     );
-  const userLabels = GmailApp.getUserLabels().sort((a, b) =>
+  const userLabels = Gmail.getUserLabels().sort((a, b) =>
     a.getName().localeCompare(b.getName(), userLocale),
   );
   userLabels.forEach((l) => {

@@ -1,8 +1,11 @@
-import Log from './logger';
+import Log, { withErrorLogging } from './logger';
 import { loadProps, saveState, type Settings, type State } from './properties';
 
 /** The max number of threads that can be returned by GmailApp.search. */
 const getThreadsMaxBatchSize = 500;
+
+// eslint-disable-next-line no-restricted-globals
+export const Gmail = withErrorLogging(GmailApp);
 
 // Define GmailLabel.getId() because it's missing from type definitions.
 declare global {
@@ -23,7 +26,7 @@ export function archiveThreads() {
 
   const { settings, state } = props;
   const { labelId } = settings;
-  const label = GmailApp.getUserLabels().find((l) => l.getId() === labelId);
+  const label = Gmail.getUserLabels().find((l) => l.getId() === labelId);
   if (!label) {
     Log.error('Missing label, skipping archiveThreads', { labelId });
     return 'Error: No label selected';
@@ -39,7 +42,7 @@ export function archiveThreads() {
   // Archive the threads in batches of 100 to avoid timeouts.
   for (let i = 0; i < threads.length; i += 100) {
     const batch = threads.slice(i, i + 100);
-    GmailApp.moveThreadsToArchive(batch);
+    Gmail.moveThreadsToArchive(batch);
     const archivedCount = i + batch.length;
     Log.info('Archived threads', {
       archivedCount,
@@ -122,7 +125,7 @@ function getInboxThreads(lastRunMs: number, ...params: string[]) {
   let page: GoogleAppsScript.Gmail.GmailThread[];
   do {
     Log.debug('Querying inbox threads', { offset, max, queryParams });
-    page = GmailApp.search(queryParams.join(' AND '), offset, max);
+    page = Gmail.search(queryParams.join(' AND '), offset, max);
     threads.push(...page);
     offset += max;
   } while (page.length >= max);
@@ -169,7 +172,7 @@ function getLabelThreads(
   let page: GoogleAppsScript.Gmail.GmailThread[];
   do {
     Log.debug('Querying label threads', { offset, max, queryParams });
-    page = GmailApp.search(queryParams.join(' AND '), offset, max);
+    page = Gmail.search(queryParams.join(' AND '), offset, max);
 
     // @note We assume getLastMessageDate() doesn't make a network request.
     const newThreads = page.filter(
