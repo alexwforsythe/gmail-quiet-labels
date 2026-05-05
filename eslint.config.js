@@ -26,6 +26,19 @@ export default [
           name: 'Logger',
           message: "Do not use 'Base.Logger'. Use 'Log' instead.",
         },
+        {
+          name: 'GmailApp',
+          message: "Do not use 'Base.GmailApp'. Use 'Gmail' instead.",
+        },
+        {
+          name: 'PropertiesService',
+          message:
+            "Do not use 'Base.UserProperties'. Use 'UserProperties' instead.",
+        },
+        {
+          name: 'ScriptApp',
+          message: "Do not use 'Base.ScriptApp'. Use 'Script' instead.",
+        },
       ],
     },
   },
