@@ -4,6 +4,8 @@ layout: home
 permalink: /
 ---
 
+![promo-image](assets/images/promo-marquee.png)
+
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/alexwforsythe)
 
 - [ ] @todo google workspace link
