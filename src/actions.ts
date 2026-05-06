@@ -1,4 +1,4 @@
-import { buildHomepage } from './cards';
+import cards from './cards';
 import { archiveThreads } from './gmail';
 import Log, { withErrorLogging } from './logger';
 import { clearState, loadProps, saveSettings } from './properties';
@@ -21,6 +21,10 @@ const handleClickRunNow: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
 ) => refreshHomepage(e, archiveThreads());
 
+const handleClickRefresh: ActionHandler = (
+  e: GoogleAppsScript.Addons.EventObject,
+) => refreshHomepage(e, 'Refreshed add-on.');
+
 function refreshHomepage(
   e: GoogleAppsScript.Addons.EventObject,
   notificationText?: string,
@@ -29,7 +33,7 @@ function refreshHomepage(
     .setNavigation(
       CardService.newNavigation()
         .popToRoot()
-        .updateCard(buildHomepage(e.commonEventObject.userLocale)),
+        .updateCard(cards.buildHomepage(e.commonEventObject.userLocale)),
     )
     .setStateChanged(true);
 
@@ -195,7 +199,7 @@ function buildHomepageResponse(
   const res = CardService.newActionResponseBuilder().setNavigation(
     CardService.newNavigation()
       .popToRoot()
-      .updateCard(buildHomepage(userLocale)),
+      .updateCard(cards.buildHomepage(userLocale)),
   );
   if (notificationText) {
     res.setNotification(
@@ -208,6 +212,7 @@ function buildHomepageResponse(
 export default {
   handleClickClearState: withErrorHandling(handleClickClearState),
   handleClickRunNow: withErrorHandling(handleClickRunNow),
+  handleClickRefresh: withErrorHandling(handleClickRefresh),
   handleChangeLabelId: withErrorHandling(handleChangeLabelId),
   handleChangeIntervalHours: withErrorHandling(handleChangeIntervalHours),
   handleChangeExcludeRead: withErrorHandling(handleChangeExcludeRead),

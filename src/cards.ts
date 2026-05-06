@@ -2,10 +2,39 @@ import actions from './actions';
 import { Gmail } from './gmail';
 import { defaultEvaluationIntervalHours, loadProps } from './properties';
 
-const aboutLink = 'https://www.alexwforsythe.com/gmail-quiet-labels/';
 const evaluationIntervalsHours = [1, 6, defaultEvaluationIntervalHours, 24];
+const helpLink = 'https://www.alexwforsythe.com/gmail-quiet-labels/';
 
-export function buildHomepage(userLocale: string | undefined) {
+type CardConstructor = (
+  userLocale?: string,
+) => GoogleAppsScript.Card_Service.Card;
+
+function newCardBuilder() {
+  return CardService.newCardBuilder()
+    .setHeader(
+      CardService.newCardHeader()
+        .setTitle('Settings')
+        .setImageUrl(
+          'https://www.gstatic.com/images/icons/material/system/1x/settings_black_48dp.png',
+        ),
+    )
+    .addCardAction(
+      CardService.newCardAction()
+        .setText('About')
+        .setOpenLink(CardService.newOpenLink().setUrl(helpLink)),
+    );
+  // .addCardAction(
+  //   CardService.newCardAction()
+  //     .setText('Clear state')
+  //     .setOnClickAction(
+  //       CardService.newAction().setFunctionName(
+  //         actions.handleClickClearState.name,
+  //       ),
+  //     ),
+  // );
+}
+
+function buildHomepage(userLocale?: string) {
   const { settings, state } = loadProps();
 
   // Label selection
@@ -41,119 +70,148 @@ export function buildHomepage(userLocale: string | undefined) {
     );
   });
 
-  return (
-    CardService.newCardBuilder()
-      .setHeader(
-        CardService.newCardHeader()
-          .setTitle('Settings')
-          .setImageUrl(
-            'https://www.gstatic.com/images/icons/material/system/1x/settings_black_48dp.png',
-          ),
-      )
-      .addCardAction(
-        CardService.newCardAction()
-          .setText('About')
-          .setOpenLink(CardService.newOpenLink().setUrl(aboutLink)),
-      )
-      // .addCardAction(
-      //   CardService.newCardAction()
-      //     .setText('Clear state')
-      //     .setOnClickAction(
-      //       CardService.newAction().setFunctionName(handleClickClearState.name),
-      //     ),
-      // )
-      .addSection(
-        CardService.newCardSection()
-          .setHeader('Filter')
-          .addWidget(labelSelect)
-          .addWidget(
-            CardService.newDecoratedText()
-              .setText('Exclude read messages')
-              .setSwitchControl(
-                CardService.newSwitch()
-                  .setFieldName('excludeRead')
-                  .setValue('true')
-                  .setSelected(settings.excludeRead)
-                  .setOnChangeAction(
-                    CardService.newAction().setFunctionName(
-                      actions.handleChangeExcludeRead.name,
-                    ),
+  return newCardBuilder()
+    .addSection(
+      CardService.newCardSection()
+        .setHeader('Filter')
+        .addWidget(labelSelect)
+        .addWidget(
+          CardService.newDecoratedText()
+            .setText('Exclude read messages')
+            .setSwitchControl(
+              CardService.newSwitch()
+                .setFieldName('excludeRead')
+                .setValue('true')
+                .setSelected(settings.excludeRead)
+                .setOnChangeAction(
+                  CardService.newAction().setFunctionName(
+                    actions.handleChangeExcludeRead.name,
                   ),
-              ),
-          )
-          .addWidget(
-            CardService.newDecoratedText()
-              .setText('Exclude important messages')
-              .setSwitchControl(
-                CardService.newSwitch()
-                  .setFieldName('excludeImportant')
-                  .setValue('true')
-                  .setSelected(settings.excludeImportant)
-                  .setOnChangeAction(
-                    CardService.newAction().setFunctionName(
-                      actions.handleChangeExcludeImportant.name,
-                    ),
+                ),
+            ),
+        )
+        .addWidget(
+          CardService.newDecoratedText()
+            .setText('Exclude important messages')
+            .setSwitchControl(
+              CardService.newSwitch()
+                .setFieldName('excludeImportant')
+                .setValue('true')
+                .setSelected(settings.excludeImportant)
+                .setOnChangeAction(
+                  CardService.newAction().setFunctionName(
+                    actions.handleChangeExcludeImportant.name,
                   ),
-              ),
-          ),
-      )
-      .addSection(
-        CardService.newCardSection()
-          .setHeader('Schedule')
-          .addWidget(
-            CardService.newDecoratedText()
-              .setText('Enabled')
-              .setSwitchControl(
-                CardService.newSwitch()
-                  .setFieldName('enableTimerTrigger')
-                  .setValue('true')
-                  .setSelected(settings.enableTimerTrigger)
-                  .setOnChangeAction(
-                    CardService.newAction().setFunctionName(
-                      actions.handleChangeEnableTimerTrigger.name,
-                    ),
-                  ),
-              ),
-          )
-          .addWidget(intervalSelect),
-      )
-      .addSection(
-        CardService.newCardSection()
-          .setHeader('Threads archived')
-          .addWidget(
-            CardService.newDecoratedText()
-              .setTopLabel(
-                'Last run - ' +
-                  (state.lastRunMs
-                    ? new Date(state.lastRunMs).toLocaleString(userLocale, {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: 'numeric',
-                      })
-                    : 'Never'),
-              )
-              .setText(
-                state.lastRunMs ? state.lastRunArchivedCount.toString() : '–',
-              ),
-          )
-          .addWidget(
-            CardService.newDecoratedText()
-              .setTopLabel('All time')
-              .setText(state.totalArchivedCount.toString()),
-          ),
-      )
-      .setFixedFooter(
-        CardService.newFixedFooter().setPrimaryButton(
-          CardService.newTextButton()
-            .setText('Run now')
-            .setOnClickAction(
-              CardService.newAction()
-                .setFunctionName(actions.handleClickRunNow.name)
-                .addRequiredWidget('labelId'),
+                ),
             ),
         ),
-      )
-      .build()
-  );
+    )
+    .addSection(
+      CardService.newCardSection()
+        .setHeader('Schedule')
+        .addWidget(
+          CardService.newDecoratedText()
+            .setText('Enabled')
+            .setSwitchControl(
+              CardService.newSwitch()
+                .setFieldName('enableTimerTrigger')
+                .setValue('true')
+                .setSelected(settings.enableTimerTrigger)
+                .setOnChangeAction(
+                  CardService.newAction().setFunctionName(
+                    actions.handleChangeEnableTimerTrigger.name,
+                  ),
+                ),
+            ),
+        )
+        .addWidget(intervalSelect),
+    )
+    .addSection(
+      CardService.newCardSection()
+        .setHeader('Threads archived')
+        .addWidget(
+          CardService.newDecoratedText()
+            .setTopLabel(
+              'Last run - ' +
+                (state.lastRunMs
+                  ? new Date(state.lastRunMs).toLocaleString(userLocale, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: 'numeric',
+                    })
+                  : 'Never'),
+            )
+            .setText(
+              state.lastRunMs ? state.lastRunArchivedCount.toString() : '–',
+            ),
+        )
+        .addWidget(
+          CardService.newDecoratedText()
+            .setTopLabel('All time')
+            .setText(state.totalArchivedCount.toString()),
+        ),
+    )
+    .setFixedFooter(
+      CardService.newFixedFooter().setPrimaryButton(
+        CardService.newTextButton()
+          .setText('Run now')
+          .setOnClickAction(
+            CardService.newAction()
+              .setFunctionName(actions.handleClickRunNow.name)
+              .addRequiredWidget('labelId'),
+          ),
+      ),
+    )
+    .build();
 }
+
+function buildErrorCard(err: unknown) {
+  return newCardBuilder()
+    .addSection(
+      CardService.newCardSection()
+        .addWidget(
+          CardService.newDecoratedText()
+            .setStartIcon(
+              CardService.newIconImage().setMaterialIcon(
+                CardService.newMaterialIcon().setName('error'),
+              ),
+            )
+            .setText(
+              'Unable to open add-on settings. Please refresh or try again later.',
+            )
+            .setWrapText(true),
+        )
+        .addWidget(
+          CardService.newDecoratedText()
+            .setTopLabel('Reason')
+            .setText(err instanceof Error ? err.message : 'Failed to load.'),
+        ),
+    )
+    .setFixedFooter(
+      CardService.newFixedFooter().setPrimaryButton(
+        CardService.newTextButton()
+          .setText('Refresh')
+          .setOnClickAction(
+            CardService.newAction().setFunctionName(
+              actions.handleClickRefresh.name,
+            ),
+          ),
+      ),
+    )
+    .build();
+}
+
+function withErrorHandling(buildCard: CardConstructor): CardConstructor {
+  return (userLocale?: string) => {
+    try {
+      return buildCard(userLocale);
+    } catch (err) {
+      return buildErrorCard(err);
+    }
+  };
+}
+
+export default {
+  buildHomepage: withErrorHandling(buildHomepage),
+};
