@@ -1,7 +1,7 @@
-import { buildHomepage } from './cards';
+import cards from './cards';
 
 export function onHomepageTrigger(
   e: GoogleAppsScript.Addons.EventObject,
 ): GoogleAppsScript.Card_Service.Card {
-  return buildHomepage(e.commonEventObject.userLocale);
+  return cards.buildHomepage(e.commonEventObject.userLocale);
 }
