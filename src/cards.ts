@@ -1,11 +1,4 @@
-import {
-  handleChangeEnableTimerTrigger,
-  handleChangeExcludeImportant,
-  handleChangeExcludeRead,
-  handleChangeIntervalHours,
-  handleChangeLabelId,
-  handleClickRunNow,
-} from './actions';
+import actions from './actions';
 import { Gmail } from './gmail';
 import { defaultEvaluationIntervalHours, loadProps } from './properties';
 
@@ -21,7 +14,7 @@ export function buildHomepage(userLocale: string | undefined) {
     .setTitle('Match threads with label')
     .setFieldName('labelId')
     .setOnChangeAction(
-      CardService.newAction().setFunctionName(handleChangeLabelId.name),
+      CardService.newAction().setFunctionName(actions.handleChangeLabelId.name),
     );
   const userLabels = Gmail.getUserLabels().sort((a, b) =>
     a.getName().localeCompare(b.getName(), userLocale),
@@ -36,7 +29,9 @@ export function buildHomepage(userLocale: string | undefined) {
     .setTitle('Archive matching threads every')
     .setFieldName('intervalHours')
     .setOnChangeAction(
-      CardService.newAction().setFunctionName(handleChangeIntervalHours.name),
+      CardService.newAction().setFunctionName(
+        actions.handleChangeIntervalHours.name,
+      ),
     );
   evaluationIntervalsHours.forEach((h) => {
     intervalSelect.addItem(
@@ -81,7 +76,7 @@ export function buildHomepage(userLocale: string | undefined) {
                   .setSelected(settings.excludeRead)
                   .setOnChangeAction(
                     CardService.newAction().setFunctionName(
-                      handleChangeExcludeRead.name,
+                      actions.handleChangeExcludeRead.name,
                     ),
                   ),
               ),
@@ -96,7 +91,7 @@ export function buildHomepage(userLocale: string | undefined) {
                   .setSelected(settings.excludeImportant)
                   .setOnChangeAction(
                     CardService.newAction().setFunctionName(
-                      handleChangeExcludeImportant.name,
+                      actions.handleChangeExcludeImportant.name,
                     ),
                   ),
               ),
@@ -115,7 +110,7 @@ export function buildHomepage(userLocale: string | undefined) {
                   .setSelected(settings.enableTimerTrigger)
                   .setOnChangeAction(
                     CardService.newAction().setFunctionName(
-                      handleChangeEnableTimerTrigger.name,
+                      actions.handleChangeEnableTimerTrigger.name,
                     ),
                   ),
               ),
@@ -154,7 +149,7 @@ export function buildHomepage(userLocale: string | undefined) {
             .setText('Run now')
             .setOnClickAction(
               CardService.newAction()
-                .setFunctionName(handleClickRunNow.name)
+                .setFunctionName(actions.handleClickRunNow.name)
                 .addRequiredWidget('labelId'),
             ),
         ),

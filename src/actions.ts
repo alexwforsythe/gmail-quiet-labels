@@ -6,14 +6,20 @@ import { clearState, loadProps, saveSettings } from './properties';
 // eslint-disable-next-line no-restricted-globals
 const Script = withErrorLogging(ScriptApp);
 
-export function handleClickClearState(e: GoogleAppsScript.Addons.EventObject) {
+type ActionHandler = (
+  e: GoogleAppsScript.Addons.EventObject,
+) => GoogleAppsScript.Card_Service.ActionResponse;
+
+const handleClickClearState: ActionHandler = (
+  e: GoogleAppsScript.Addons.EventObject,
+) => {
   clearState();
   return refreshHomepage(e, 'State cleared.');
-}
+};
 
-export function handleClickRunNow(e: GoogleAppsScript.Addons.EventObject) {
-  refreshHomepage(e, archiveThreads());
-}
+const handleClickRunNow: ActionHandler = (
+  e: GoogleAppsScript.Addons.EventObject,
+) => refreshHomepage(e, archiveThreads());
 
 function refreshHomepage(
   e: GoogleAppsScript.Addons.EventObject,
@@ -36,7 +42,9 @@ function refreshHomepage(
   return res.build();
 }
 
-export function handleChangeLabelId(e: GoogleAppsScript.Addons.EventObject) {
+const handleChangeLabelId: ActionHandler = (
+  e: GoogleAppsScript.Addons.EventObject,
+) => {
   const { settings } = loadProps();
   const { commonEventObject } = e;
   const { formInputs: form } = commonEventObject;
@@ -56,11 +64,11 @@ export function handleChangeLabelId(e: GoogleAppsScript.Addons.EventObject) {
 
   saveSettings({ ...settings, labelId });
   return buildHomepageResponse(e.commonEventObject.userLocale);
-}
+};
 
-export function handleChangeIntervalHours(
+const handleChangeIntervalHours: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
-) {
+) => {
   const { settings } = loadProps();
   const { commonEventObject } = e;
   const { formInputs: form } = commonEventObject;
@@ -81,11 +89,11 @@ export function handleChangeIntervalHours(
 
   saveSettings({ ...settings, intervalHours });
   return buildHomepageResponse(e.commonEventObject.userLocale);
-}
+};
 
-export function handleChangeExcludeRead(
+const handleChangeExcludeRead: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
-) {
+) => {
   const { commonEventObject } = e;
   const { formInputs: form } = commonEventObject;
   const excludeRead = Boolean(form.excludeRead?.stringInputs?.value[0]);
@@ -97,11 +105,11 @@ export function handleChangeExcludeRead(
 
   saveSettings({ ...settings, excludeRead });
   return buildHomepageResponse(e.commonEventObject.userLocale);
-}
+};
 
-export function handleChangeExcludeImportant(
+const handleChangeExcludeImportant: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
-) {
+) => {
   const { commonEventObject } = e;
   const { formInputs: form } = commonEventObject;
   const excludeImportant = Boolean(
@@ -115,11 +123,11 @@ export function handleChangeExcludeImportant(
 
   saveSettings({ ...settings, excludeImportant });
   return buildHomepageResponse(e.commonEventObject.userLocale);
-}
+};
 
-export function handleChangeEnableTimerTrigger(
+const handleChangeEnableTimerTrigger: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
-) {
+) => {
   const { commonEventObject } = e;
   const { formInputs: form } = commonEventObject;
   const enableTimerTrigger = Boolean(
@@ -149,6 +157,35 @@ export function handleChangeEnableTimerTrigger(
     e.commonEventObject.userLocale,
     enableTimerTrigger ? 'Schedule enabled!' : 'Schedule disabled.',
   );
+};
+
+export function withErrorHandling(h: ActionHandler): ActionHandler {
+  const handler = (e: GoogleAppsScript.Addons.EventObject) => {
+    try {
+      return h(e);
+    } catch (err) {
+      // Log the error and display a message to the user, but don't update the
+      // lastRunMs. If the error is transient, such as a timeout or quota limit,
+      // the job will be retried on the next run anyway.
+      Log.error(new Error('Failed to run action', { cause: err }), {
+        action: h.name,
+      });
+
+      return buildHomepageResponse(
+        e.commonEventObject.userLocale,
+        err instanceof Error
+          ? `${err.message}${err.message.endsWith('.') ? '' : '.'}`
+          : 'Failed to run action.',
+      );
+    }
+  };
+
+  // Explicitly define the name property to match the original function so it
+  // can be found by GAS actions.
+  Object.defineProperty(handler, 'name', { value: h.name });
+  handler.name = h.name;
+
+  return handler;
 }
 
 function buildHomepageResponse(
@@ -167,3 +204,15 @@ function buildHomepageResponse(
   }
   return res.setStateChanged(true).build();
 }
+
+export default {
+  handleClickClearState: withErrorHandling(handleClickClearState),
+  handleClickRunNow: withErrorHandling(handleClickRunNow),
+  handleChangeLabelId: withErrorHandling(handleChangeLabelId),
+  handleChangeIntervalHours: withErrorHandling(handleChangeIntervalHours),
+  handleChangeExcludeRead: withErrorHandling(handleChangeExcludeRead),
+  handleChangeExcludeImportant: withErrorHandling(handleChangeExcludeImportant),
+  handleChangeEnableTimerTrigger: withErrorHandling(
+    handleChangeEnableTimerTrigger,
+  ),
+};
