@@ -29,7 +29,7 @@ export function archiveThreads() {
   const label = Gmail.getUserLabels().find((l) => l.getId() === labelId);
   if (!label) {
     Log.error('Missing label, skipping archiveThreads', { labelId });
-    return 'Error: No label selected';
+    throw new Error('No label selected');
   }
 
   const threads = getThreadsToArchive(label.getName(), {
