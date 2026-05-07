@@ -46,27 +46,15 @@ function refreshHomepage(
   return res.build();
 }
 
-const handleChangeLabelId: ActionHandler = (
+const handleChangeLabelIds: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
 ) => {
   const { settings } = loadProps();
   const { commonEventObject } = e;
   const { formInputs: form } = commonEventObject;
-  const labelId = form.labelId.stringInputs?.value[0];
-  if (!labelId) {
-    Log.error('Invalid labelId, skipping handler', { labelId });
-    return buildHomepageResponse(
-      e.commonEventObject.userLocale,
-      'Error: Invalid label',
-    );
-  }
+  const labelIds = form.labelIds?.stringInputs?.value ?? [];
 
-  if (settings.labelId === labelId) {
-    Log.warn('labelId unchanged, skipping handler');
-    return buildHomepageResponse(e.commonEventObject.userLocale);
-  }
-
-  saveSettings({ ...settings, labelId });
+  saveSettings({ ...settings, labelIds });
   return buildHomepageResponse(e.commonEventObject.userLocale);
 };
 
@@ -82,7 +70,7 @@ const handleChangeIntervalHours: ActionHandler = (
     Log.error('Invalid intervalHours, skipping handler', { intervalHours });
     return buildHomepageResponse(
       e.commonEventObject.userLocale,
-      'Error: Invalid interval',
+      'Unknown interval.',
     );
   }
 
@@ -213,7 +201,7 @@ export default {
   handleClickClearState: withErrorHandling(handleClickClearState),
   handleClickRunNow: withErrorHandling(handleClickRunNow),
   handleClickRefresh: withErrorHandling(handleClickRefresh),
-  handleChangeLabelId: withErrorHandling(handleChangeLabelId),
+  handleChangeLabelIds: withErrorHandling(handleChangeLabelIds),
   handleChangeIntervalHours: withErrorHandling(handleChangeIntervalHours),
   handleChangeExcludeRead: withErrorHandling(handleChangeExcludeRead),
   handleChangeExcludeImportant: withErrorHandling(handleChangeExcludeImportant),

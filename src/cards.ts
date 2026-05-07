@@ -39,17 +39,20 @@ function buildHomepage(userLocale?: string) {
 
   // Label selection
   const labelSelect = CardService.newSelectionInput()
-    .setType(CardService.SelectionInputType.DROPDOWN)
-    .setTitle('Match threads with label')
-    .setFieldName('labelId')
+    .setType(CardService.SelectionInputType.MULTI_SELECT)
+    .setTitle('Match threads with any of these labels')
+    .setFieldName('labelIds')
     .setOnChangeAction(
-      CardService.newAction().setFunctionName(actions.handleChangeLabelId.name),
+      CardService.newAction().setFunctionName(
+        actions.handleChangeLabelIds.name,
+      ),
     );
   const userLabels = Gmail.getUserLabels().sort((a, b) =>
     a.getName().localeCompare(b.getName(), userLocale),
   );
+  const labelIdsSet = new Set(settings.labelIds);
   userLabels.forEach((l) => {
-    labelSelect.addItem(l.getName(), l.getId(), l.getId() === settings.labelId);
+    labelSelect.addItem(l.getName(), l.getId(), labelIdsSet.has(l.getId()));
   });
 
   // Interval selection
@@ -80,6 +83,7 @@ function buildHomepage(userLocale?: string) {
             .setText('Exclude read messages')
             .setSwitchControl(
               CardService.newSwitch()
+                .setControlType(CardService.SwitchControlType.CHECK_BOX)
                 .setFieldName('excludeRead')
                 .setValue('true')
                 .setSelected(settings.excludeRead)
@@ -95,6 +99,7 @@ function buildHomepage(userLocale?: string) {
             .setText('Exclude important messages')
             .setSwitchControl(
               CardService.newSwitch()
+                .setControlType(CardService.SwitchControlType.CHECK_BOX)
                 .setFieldName('excludeImportant')
                 .setValue('true')
                 .setSelected(settings.excludeImportant)
@@ -159,7 +164,7 @@ function buildHomepage(userLocale?: string) {
           .setOnClickAction(
             CardService.newAction()
               .setFunctionName(actions.handleClickRunNow.name)
-              .addRequiredWidget('labelId'),
+              .addRequiredWidget('labelIds'),
           ),
       ),
     )

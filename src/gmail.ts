@@ -23,16 +23,25 @@ declare global {
 export function archiveThreads() {
   const nowMs = new Date().getTime();
   const props = loadProps();
-
   const { settings, state } = props;
-  const { labelId } = settings;
-  const label = Gmail.getUserLabels().find((l) => l.getId() === labelId);
-  if (!label) {
-    Log.error('Missing label, skipping archiveThreads', { labelId });
-    throw new Error('No label selected');
+
+  const { labelIds } = settings;
+  const labelIdsSet = new Set(labelIds);
+  const labels = Gmail.getUserLabels().filter((l) =>
+    labelIdsSet.has(l.getId()),
+  );
+  if (labels.length === 0) {
+    Log.error('Missing labels, skipping archiveThreads', { labelIds });
+    throw new Error('No labels selected');
+  } else if (labels.length !== labelIds.length) {
+    Log.warn('Some configured labels were not found', {
+      labelIds,
+      foundLabelIds: labels.map((l) => l.getId()),
+    });
   }
 
-  const threads = getThreadsToArchive(label.getName(), {
+  const labelNames = labels.map((l) => l.getName());
+  const threads = getThreadsToArchive(labelNames, {
     lastRunMs: state.lastRunMs,
     excludeRead: settings.excludeRead,
     excludeImportant: settings.excludeImportant,
@@ -79,7 +88,7 @@ export function archiveThreads() {
  * received), but we don't do it because we can archive the threads directly.
  */
 function getThreadsToArchive(
-  labelName: string,
+  labelNames: string[],
   {
     lastRunMs,
     excludeRead,
@@ -93,7 +102,7 @@ function getThreadsToArchive(
   ];
 
   const inboxThreads = getInboxThreads(lastRunMs, ...params);
-  const labelThreads = getLabelThreads(labelName, lastRunMs, ...params);
+  const labelThreads = getLabelThreads(labelNames, lastRunMs, ...params);
 
   const labelThreadIdsSet = new Set(labelThreads.map((t) => t.getId()));
   return inboxThreads.filter((t) => labelThreadIdsSet.has(t.getId()));
@@ -156,14 +165,16 @@ function getInboxThreads(lastRunMs: number, ...params: string[]) {
  * @returns all threads matching the given args
  */
 function getLabelThreads(
-  labelName: string,
+  labelNames: string[],
   lastRunMs: number,
   ...params: string[]
 ) {
   const max = getThreadsMaxBatchSize;
   const queryParams = [
     'has:userlabels',
-    `label:${labelName.replaceAll(' ', '-')}`,
+    `(${labelNames
+      .map((name) => `label:${name.replaceAll(' ', '-')}`)
+      .join(' OR ')})`,
     ...params,
   ];
 

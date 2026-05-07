@@ -6,7 +6,7 @@ export const defaultEvaluationIntervalHours = 12;
 
 export interface Settings {
   // Filters
-  labelId: string;
+  labelIds: string[];
   excludeRead: boolean;
   excludeImportant: boolean;
 
@@ -51,7 +51,7 @@ export function loadProps(): Properties {
     UserProperties.getProperties();
   const props = {
     settings: {
-      labelId: '',
+      labelIds: [],
       excludeRead: false,
       excludeImportant: false,
       enableTimerTrigger: false,
