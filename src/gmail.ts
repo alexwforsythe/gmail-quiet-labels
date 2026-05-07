@@ -45,6 +45,7 @@ export function archiveThreads() {
     lastRunMs: state.lastRunMs,
     excludeRead: settings.excludeRead,
     excludeImportant: settings.excludeImportant,
+    excludeStarred: settings.excludeStarred,
   });
   Log.debug('Got threads to archive', { count: threads.length, threads });
 
@@ -93,12 +94,14 @@ function getThreadsToArchive(
     lastRunMs,
     excludeRead,
     excludeImportant,
+    excludeStarred,
   }: Pick<State, 'lastRunMs'> &
-    Pick<Settings, 'excludeRead' | 'excludeImportant'>,
+    Pick<Settings, 'excludeRead' | 'excludeImportant' | 'excludeStarred'>,
 ) {
   const params = [
     ...(excludeRead ? ['is:unread'] : []),
     ...(excludeImportant ? ['-is:important'] : []),
+    ...(excludeStarred ? ['-is:starred'] : []),
   ];
 
   const inboxThreads = getInboxThreads(lastRunMs, ...params);

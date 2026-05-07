@@ -9,6 +9,7 @@ export interface Settings {
   labelIds: string[];
   excludeRead: boolean;
   excludeImportant: boolean;
+  excludeStarred: boolean;
 
   // Timer trigger
   enableTimerTrigger: boolean;
@@ -54,6 +55,7 @@ export function loadProps(): Properties {
       labelIds: [],
       excludeRead: false,
       excludeImportant: false,
+      excludeStarred: false,
       enableTimerTrigger: false,
       intervalHours: defaultEvaluationIntervalHours,
       ...(settings && JSON.parse(settings)),

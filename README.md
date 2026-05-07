@@ -72,10 +72,6 @@ In fact, new replies addressed directly to you will always move a thread back to
 the inbox, even if it's muted! So the only solution is to use Google Apps Script
 to automate the manual process of re-archiving these threads.
 
-## 📋 To do
-
-- [ ] Allow user to exclude starred threads
-
 ---
 
 [^1]: <https://developers.google.com/workspace/gmail/api/guides/labels#manage_labels_on_messages_threads>

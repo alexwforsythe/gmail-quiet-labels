@@ -117,6 +117,22 @@ const handleChangeExcludeImportant: ActionHandler = (
   return buildHomepageResponse(e.commonEventObject.userLocale);
 };
 
+const handleChangeExcludeStarred: ActionHandler = (
+  e: GoogleAppsScript.Addons.EventObject,
+) => {
+  const { commonEventObject } = e;
+  const { formInputs: form } = commonEventObject;
+  const excludeStarred = Boolean(form.excludeStarred?.stringInputs?.value[0]);
+  const { settings } = loadProps();
+  if (settings.excludeStarred === excludeStarred) {
+    Log.warn('excludeStarred unchanged, skipping handler');
+    return buildHomepageResponse(e.commonEventObject.userLocale);
+  }
+
+  saveSettings({ ...settings, excludeStarred });
+  return buildHomepageResponse(e.commonEventObject.userLocale);
+};
+
 const handleChangeEnableTimerTrigger: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
 ) => {
@@ -205,6 +221,7 @@ export default {
   handleChangeIntervalHours: withErrorHandling(handleChangeIntervalHours),
   handleChangeExcludeRead: withErrorHandling(handleChangeExcludeRead),
   handleChangeExcludeImportant: withErrorHandling(handleChangeExcludeImportant),
+  handleChangeExcludeStarred: withErrorHandling(handleChangeExcludeStarred),
   handleChangeEnableTimerTrigger: withErrorHandling(
     handleChangeEnableTimerTrigger,
   ),
