@@ -59,17 +59,6 @@ then archiving them. This happens:
 Gmail add-ons can't be triggered by new messages, so it has to run on a
 schedule.
 
-### What if I want to silence multiple labels?
-
-For now, QuietLabels can only silence a single user-defined label. As a
-workaround, you can:
-
-1. Create a general label for silencing threads (e.g. "Silenced",
-   "quiet-labels")
-2. Select that label in the add-on
-3. Add that label to any threads you want to silence, in addition to the
-   label(s) you would normally use
-
 ### Why can't I use a filter?
 
 When you add a label to a thread in Gmail, it actually applies to the most
@@ -85,7 +74,6 @@ to automate the manual process of re-archiving these threads.
 
 ## 📋 To do
 
-- [ ] Allow user to specify multiple labels to silence
 - [ ] Allow user to exclude starred threads
 
 ---
