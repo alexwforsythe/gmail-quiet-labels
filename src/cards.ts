@@ -76,11 +76,15 @@ function buildHomepage(userLocale?: string) {
   return newCardBuilder()
     .addSection(
       CardService.newCardSection()
-        .setHeader('Filter')
         .addWidget(labelSelect)
         .addWidget(
           CardService.newDecoratedText()
             .setText('Exclude read messages')
+            .setStartIcon(
+              CardService.newIconImage().setMaterialIcon(
+                CardService.newMaterialIcon().setName('mark_email_read'),
+              ),
+            )
             .setSwitchControl(
               CardService.newSwitch()
                 .setControlType(CardService.SwitchControlType.CHECK_BOX)
@@ -97,6 +101,11 @@ function buildHomepage(userLocale?: string) {
         .addWidget(
           CardService.newDecoratedText()
             .setText('Exclude important messages')
+            .setStartIcon(
+              CardService.newIconImage().setMaterialIcon(
+                CardService.newMaterialIcon().setName('label_important'),
+              ),
+            )
             .setSwitchControl(
               CardService.newSwitch()
                 .setControlType(CardService.SwitchControlType.CHECK_BOX)
@@ -109,14 +118,12 @@ function buildHomepage(userLocale?: string) {
                   ),
                 ),
             ),
-        ),
-    )
-    .addSection(
-      CardService.newCardSection()
-        .setHeader('Schedule')
+        )
+        .addWidget(CardService.newDivider())
+        .addWidget(intervalSelect)
         .addWidget(
           CardService.newDecoratedText()
-            .setText('Enabled')
+            .setText('Enable schedule')
             .setSwitchControl(
               CardService.newSwitch()
                 .setFieldName('enableTimerTrigger')
@@ -128,12 +135,12 @@ function buildHomepage(userLocale?: string) {
                   ),
                 ),
             ),
-        )
-        .addWidget(intervalSelect),
+        ),
     )
     .addSection(
       CardService.newCardSection()
-        .setHeader('Threads archived')
+        .setHeader('Archived')
+        .setCollapsible(true)
         .addWidget(
           CardService.newDecoratedText()
             .setTopLabel(
@@ -149,12 +156,14 @@ function buildHomepage(userLocale?: string) {
             )
             .setText(
               state.lastRunMs ? state.lastRunArchivedCount.toString() : '–',
-            ),
+            )
+            .setBottomLabel('messages'),
         )
         .addWidget(
           CardService.newDecoratedText()
             .setTopLabel('All time')
-            .setText(state.totalArchivedCount.toString()),
+            .setText(state.totalArchivedCount.toString())
+            .setBottomLabel('messages'),
         ),
     )
     .setFixedFooter(
