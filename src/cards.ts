@@ -77,6 +77,23 @@ function buildHomepage(userLocale?: string) {
     .addSection(
       CardService.newCardSection()
         .addWidget(labelSelect)
+        .addWidget(intervalSelect)
+        .addWidget(
+          CardService.newDecoratedText()
+            .setText('Enable schedule')
+            .setSwitchControl(
+              CardService.newSwitch()
+                .setFieldName('enableTimerTrigger')
+                .setValue('true')
+                .setSelected(settings.enableTimerTrigger)
+                .setOnChangeAction(
+                  CardService.newAction().setFunctionName(
+                    actions.handleChangeEnableTimerTrigger.name,
+                  ),
+                ),
+            ),
+        )
+        .addWidget(CardService.newDivider())
         .addWidget(
           CardService.newDecoratedText()
             .setText('Exclude read messages')
@@ -136,23 +153,6 @@ function buildHomepage(userLocale?: string) {
                 .setOnChangeAction(
                   CardService.newAction().setFunctionName(
                     actions.handleChangeExcludeStarred.name,
-                  ),
-                ),
-            ),
-        )
-        .addWidget(CardService.newDivider())
-        .addWidget(intervalSelect)
-        .addWidget(
-          CardService.newDecoratedText()
-            .setText('Enable schedule')
-            .setSwitchControl(
-              CardService.newSwitch()
-                .setFieldName('enableTimerTrigger')
-                .setValue('true')
-                .setSelected(settings.enableTimerTrigger)
-                .setOnChangeAction(
-                  CardService.newAction().setFunctionName(
-                    actions.handleChangeEnableTimerTrigger.name,
                   ),
                 ),
             ),
