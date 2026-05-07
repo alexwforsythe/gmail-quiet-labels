@@ -148,9 +148,11 @@ const handleChangeEnableTimerTrigger: ActionHandler = (
     return buildHomepageResponse(e.commonEventObject.userLocale);
   }
 
-  Script.getProjectTriggers()
-    .filter((t) => t.getHandlerFunction() === archiveThreads.name)
-    .forEach(Script.deleteTrigger);
+  Script.getProjectTriggers().forEach((t) => {
+    if (t.getHandlerFunction() === archiveThreads.name) {
+      Script.deleteTrigger(t);
+    }
+  });
 
   if (enableTimerTrigger) {
     Script.newTrigger(archiveThreads.name)
