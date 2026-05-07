@@ -119,6 +119,27 @@ function buildHomepage(userLocale?: string) {
                 ),
             ),
         )
+        .addWidget(
+          CardService.newDecoratedText()
+            .setText('Exclude starred messages')
+            .setStartIcon(
+              CardService.newIconImage().setMaterialIcon(
+                CardService.newMaterialIcon().setName('star'),
+              ),
+            )
+            .setSwitchControl(
+              CardService.newSwitch()
+                .setControlType(CardService.SwitchControlType.CHECK_BOX)
+                .setFieldName('excludeStarred')
+                .setValue('true')
+                .setSelected(settings.excludeStarred)
+                .setOnChangeAction(
+                  CardService.newAction().setFunctionName(
+                    actions.handleChangeExcludeStarred.name,
+                  ),
+                ),
+            ),
+        )
         .addWidget(CardService.newDivider())
         .addWidget(intervalSelect)
         .addWidget(
