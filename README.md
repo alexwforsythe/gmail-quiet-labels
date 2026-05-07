@@ -47,7 +47,11 @@ then archiving them. This happens:
 > replies from the past 1 month on its first run. Future runs will clean up all
 > new replies.
 
-![screenshot](assets/images/screenshot.png)
+![screenshot-1](assets/images/screenshot-1.png)
+
+![screenshot-2](assets/images/screenshot-2.png)
+
+![screenshot-3](assets/images/screenshot-3.png)
 
 > ⚠️ If you receive thousands of emails a day, this add-on may not be able to
 > keep up.
