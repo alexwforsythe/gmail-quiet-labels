@@ -44,7 +44,7 @@ export default class Log {
     this.log(Level.WARN, msg, fields);
   }
 
-  static error(error: unknown, fields?: object) {
+  static error(error: Error | unknown, fields?: object) {
     const err =
       error instanceof Error
         ? error
@@ -54,7 +54,7 @@ export default class Log {
 
     this.log(Level.ERROR, err.message, {
       ...fields,
-      err: err.toString(),
+      cause: err.cause,
       stack: err.stack,
     });
   }
