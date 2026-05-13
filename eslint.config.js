@@ -27,6 +27,10 @@ export default [
           message: "Do not use 'Base.Logger'. Use 'Log' instead.",
         },
         {
+          name: 'Gmail',
+          message: "Do not use 'Base.Gmail'. Use 'GmailClient' instead.",
+        },
+        {
           name: 'GmailApp',
           message: "Do not use 'Base.GmailApp'. Use 'Gmail' instead.",
         },

@@ -3,6 +3,11 @@ const actionsByFunctionName: Record<string, string> = {
   getUserLabels: 'get user labels',
   search: 'search threads',
   moveThreadsToArchive: 'archive threads',
+  // GmailClient
+  getThread: 'search threads',
+  listThreads: 'search threads',
+  listMessages: 'search threads',
+  archiveMessages: 'archive messages',
   // PropertiesService
   setProperty: 'set user settings',
   getProperties: 'get user settings',
