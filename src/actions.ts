@@ -165,7 +165,7 @@ const handleChangeEnableTimerTrigger: ActionHandler = (
 
   return buildHomepageResponse(
     e.commonEventObject.userLocale,
-    enableTimerTrigger ? 'Schedule enabled!' : 'Schedule disabled.',
+    `Schedule ${enableTimerTrigger ? 'enabled' : 'disabled'}.`,
   );
 };
 
