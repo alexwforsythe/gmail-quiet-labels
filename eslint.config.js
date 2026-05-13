@@ -32,7 +32,7 @@ export default [
         },
         {
           name: 'GmailApp',
-          message: "Do not use 'Base.GmailApp'. Use 'Gmail' instead.",
+          message: "Do not use 'Base.GmailApp'. Use 'GmailClient' instead.",
         },
         {
           name: 'PropertiesService',

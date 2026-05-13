@@ -1,212 +1,161 @@
-import Log, { withErrorLogging } from './logger';
+import { GmailClient, type Label } from './gmail';
+import Log from './logger';
 import { loadProps, saveState, type Settings, type State } from './properties';
 
-/** The max number of threads that can be returned by GmailApp.search. */
-const getThreadsMaxBatchSize = 500;
+/**
+ * The lookback window that will be used the first time the add-on is run. This
+ * avoids timeouts when querying very large inboxes.
+ */
+const initialLookbackWindow = '1m';
 
-// eslint-disable-next-line no-restricted-globals
-export const Gmail = withErrorLogging(GmailApp);
+type QueryParams = Pick<State, 'lastRunMs'> &
+  Pick<Settings, 'excludeRead' | 'excludeImportant' | 'excludeStarred'> & {
+    labels: Label[];
+  };
 
-// Define GmailLabel.getId() because it's missing from type definitions.
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace GoogleAppsScript {
-    // eslint-disable-next-line @typescript-eslint/no-namespace
-    namespace Gmail {
-      interface GmailLabel {
-        getId(): string;
-      }
-    }
-  }
-}
-
-export function archiveThreads() {
+export function archiveMessages() {
   const nowMs = new Date().getTime();
   const props = loadProps();
   const { settings, state } = props;
 
   const { labelIds } = settings;
-  const labelIdsSet = new Set(labelIds);
-  const labels = Gmail.getUserLabels().filter((l) =>
-    labelIdsSet.has(l.getId()),
-  );
-  if (labels.length === 0) {
+  if (labelIds.length === 0) {
     Log.error('Missing labels, skipping archiveThreads', { labelIds });
     throw new Error('No labels selected');
-  } else if (labels.length !== labelIds.length) {
+  }
+
+  const labelIdsSet = new Set(labelIds);
+  const labels = GmailClient.getUserLabels().filter(
+    (l) => l.id && labelIdsSet.has(l.id),
+  );
+  if (labels.length !== labelIds.length) {
     Log.warn('Some configured labels were not found', {
       labelIds,
-      foundLabelIds: labels.map((l) => l.getId()),
+      foundLabelIds: labels.map((l) => l.id),
     });
   }
 
-  const labelNames = labels.map((l) => l.getName());
-  const threads = getThreadsToArchive(labelNames, {
+  const messageIds = getMessageIdsToArchive({
     lastRunMs: state.lastRunMs,
+    labels,
     excludeRead: settings.excludeRead,
     excludeImportant: settings.excludeImportant,
     excludeStarred: settings.excludeStarred,
   });
-  Log.debug('Got threads to archive', { count: threads.length, threads });
+  Log.debug(`${messageIds.length ? 'Found' : 'No'} new messages to archive`, {
+    messageIds,
+  });
 
-  // Archive the threads in batches of 100 to avoid timeouts.
-  for (let i = 0; i < threads.length; i += 100) {
-    const batch = threads.slice(i, i + 100);
-    Gmail.moveThreadsToArchive(batch);
-    const archivedCount = i + batch.length;
-    Log.info('Archived threads', {
-      archivedCount,
-      remaining: threads.length - archivedCount,
-    });
-
-    // @todo dedupe saveState if only 1 batch?
-    saveState({
-      lastRunMs: state.lastRunMs,
-      lastRunArchivedCount: state.lastRunArchivedCount + archivedCount,
-      totalArchivedCount: state.totalArchivedCount + archivedCount,
-    });
-  }
+  GmailClient.archiveMessages(messageIds, (archivedCount) => {
+    // Update the state after each intermediate batch in case there's a failure.
+    if (archivedCount < messageIds.length) {
+      saveState({
+        lastRunMs: state.lastRunMs,
+        lastRunArchivedCount: state.lastRunArchivedCount + archivedCount,
+        totalArchivedCount: state.totalArchivedCount + archivedCount,
+      });
+    }
+    return true;
+  });
 
   saveState({
     lastRunMs: nowMs,
-    lastRunArchivedCount: threads.length,
-    totalArchivedCount: state.totalArchivedCount + threads.length,
+    lastRunArchivedCount: messageIds.length,
+    totalArchivedCount: state.totalArchivedCount + messageIds.length,
   });
 
-  return `Archived ${threads.length} threads`;
+  return messageIds.length === 0
+    ? 'No new messages to archive.'
+    : `Archived ${messageIds.length} message${messageIds.length > 1 ? 's' : ''}.`;
 }
 
 /**
- * Gmail only searches labels in a thread's newest message when querying with
- * in:inbox, so replies to previously archived threads with our label(s) won't
- * appear in the results. Instead, we query for all inbox threads and all
- * threads with the label and find the intersection of the two. This can be
- * inefficient if the user has a large number of threads, so we rely on limiting
- * the time window of the search for efficiency.
+ * Returns all new inbox messages matching the given params. This query is
+ * performed in 3 steps due to Gmail search limitations:
  *
- * @note Reapplying the label to the matched threads will add it to their newest
- * messages, causing them to appear in future searches (until a newer message is
- * received), but we don't do it because we can archive the threads directly.
- */
-function getThreadsToArchive(
-  labelNames: string[],
-  {
-    lastRunMs,
-    excludeRead,
-    excludeImportant,
-    excludeStarred,
-  }: Pick<State, 'lastRunMs'> &
-    Pick<Settings, 'excludeRead' | 'excludeImportant' | 'excludeStarred'>,
-) {
-  const params = [
-    ...(excludeRead ? ['is:unread'] : []),
-    ...(excludeImportant ? ['-is:important'] : []),
-    ...(excludeStarred ? ['-is:starred'] : []),
-  ];
-
-  const inboxThreads = getInboxThreads(lastRunMs, ...params);
-  const labelThreads = getLabelThreads(labelNames, lastRunMs, ...params);
-
-  const labelThreadIdsSet = new Set(labelThreads.map((t) => t.getId()));
-  return inboxThreads.filter((t) => labelThreadIdsSet.has(t.getId()));
-}
-
-/**
+ *   1. Find all new inbox messages since the last run
+ *   2. Find all threads matching the given params since the last run or
+ *      sometime before it
+ *   3. Find the intersection of 1 and 2
  *
- * Returns all inbox threads that have new replies since the last run.
+ * Notes:
  *
+ *   - We search incrementally since the last run to avoid timing out when
+ *     querying very large inboxes
+ *   - If the trigger has never been run, we limit the lookback window to avoid
+ *     scanning all threads
+ *   - We query messages instead of threads in step 1 because {@link Gmail} only
+ *     supports batch archiving messages
  *   - The advanced search syntax accepts timestamps in seconds (UTC):
  *     https://developers.google.com/workspace/gmail/api/guides/filtering
- *   - If the trigger has never been run, limit the lookback window to avoid
- *     scanning all threads
- *
- * @params lastRunMs: the last time the job ran
- * @param params the query params to use when searching threads
- * @returns all inbox threads matching the given args
  */
-function getInboxThreads(lastRunMs: number, ...params: string[]) {
-  const max = getThreadsMaxBatchSize;
-  const queryParams = [
-    'in:inbox',
-    `after:${Math.floor(lastRunMs / 1000)}`,
-    ...params,
-  ];
-
-  const threads: GoogleAppsScript.Gmail.GmailThread[] = [];
-  let offset = 0;
-  let page: GoogleAppsScript.Gmail.GmailThread[];
-  do {
-    Log.debug('Querying inbox threads', { offset, max, queryParams });
-    page = Gmail.search(queryParams.join(' AND '), offset, max);
-    threads.push(...page);
-    offset += max;
-  } while (page.length >= max);
-
-  Log.debug('Found inbox threads', {
-    count: threads.length,
-    threads,
-    queryParams,
+function getMessageIdsToArchive({
+  lastRunMs,
+  labels,
+  excludeRead,
+  excludeImportant,
+  excludeStarred,
+}: QueryParams) {
+  // Get all new inbox messages since the last run. We don't filter by label
+  // here because Gmail doesn't support it when querying the inbox or by date.
+  const newInboxMessages = GmailClient.listMessages(
+    [
+      'in:inbox',
+      // 'has:userlabels', // Doesn't work with 'after' operator
+      // Doesn't work with 'label' operator or labelIds:
+      lastRunMs > 0
+        ? `after:${Math.floor(lastRunMs / 1000)}`
+        : `newer_than:${initialLookbackWindow}`,
+    ].join(' AND '),
+  );
+  Log.debug(`${newInboxMessages.length ? 'Found' : 'No'} new inbox messages`, {
+    messages: newInboxMessages,
   });
 
-  return threads;
-}
+  // Get all threads with a new message and any of the given labels since the
+  // last run or sometime before it.
+  //
+  // We don't filter by inbox or date here because {@link Gmail} doesn't support
+  // it when querying by label. Instead, we stop searching at the first page
+  // that includes a thread whose newest message came before the last run.
+  const newLabelThreads = GmailClient.listThreads(
+    [
+      // 'in:inbox', // Doesn't work with 'label' operator or labelIds
+      // We use the 'label' operator with 'OR' because labelIds are ANDed.
+      `(${labels
+        .map((l) => `label:${l.name.replaceAll(' ', '-')}`)
+        .join(' OR ')})`, // Doesn't work with 'after' operator
+      // Querying by label excludes threads whose newest message is unlabeled,
+      // unless another operator is present. 'has:userlabels' is redundant, so it
+      // can be used as the extra operator without affecting results.
+      // Works with 'after' and 'label' operators:
+      'has:userlabels',
+      ...(excludeRead ? ['is:unread'] : []),
+      ...(excludeImportant ? ['-is:important'] : []),
+      ...(excludeStarred ? ['-is:starred'] : []),
+    ].join(' AND '),
+    (res) => {
+      // Stop if the oldest thread's newest message came before the last run.
+      const oldestThreadId = res.threads?.at(-1)?.id;
+      if (!oldestThreadId) {
+        return false;
+      }
+      const oldestThread = GmailClient.getThread(oldestThreadId);
+      return oldestThread.newestMessageDateMs >= lastRunMs;
+    },
+  );
 
-/**
- *
- * Returns all threads with the given label that have new replies since the last
- * run.
- *
- * label:labelName only matches threads whose newest message has the label, but
- * adding has:userlabels forces it to match threads with any message having the
- * label. Adding newer_than: or after: negates this behavior, so we can't use
- * them. Instead, we manually filter by time and stop the search after the first
- * page that contains a thread older than the last run.
- *
- * @param labelName the label to search for
- * @param lastRunMs the last time the job ran
- * @param params the query params to use when searching threads
- * @returns all threads matching the given args
- */
-function getLabelThreads(
-  labelNames: string[],
-  lastRunMs: number,
-  ...params: string[]
-) {
-  const max = getThreadsMaxBatchSize;
-  const queryParams = [
-    'has:userlabels',
-    `(${labelNames
-      .map((name) => `label:${name.replaceAll(' ', '-')}`)
-      .join(' OR ')})`,
-    ...params,
-  ];
+  Log.debug(
+    `${newLabelThreads.length ? 'Found' : 'No'} new threads with label`,
+    { threads: newLabelThreads },
+  );
 
-  const threads: GoogleAppsScript.Gmail.GmailThread[] = [];
-  let offset = 0;
-  let page: GoogleAppsScript.Gmail.GmailThread[];
-  do {
-    Log.debug('Querying label threads', { offset, max, queryParams });
-    page = Gmail.search(queryParams.join(' AND '), offset, max);
+  const newLabelThreadIdsSet = new Set<string>();
+  for (const t of newLabelThreads) {
+    newLabelThreadIdsSet.add(t.id);
+  }
 
-    // @note We assume getLastMessageDate() doesn't make a network request.
-    const newThreads = page.filter(
-      (t) => t.getLastMessageDate().getTime() > lastRunMs,
-    );
-    threads.push(...newThreads);
-
-    // Stop searching once we've found a thread older than the last run.
-    if (newThreads.length !== page.length) {
-      break;
-    }
-
-    offset += max;
-  } while (page.length >= max);
-
-  Log.debug('Found new threads with label', {
-    count: threads.length,
-    threads,
-    queryParams,
-  });
-
-  return threads;
+  return newInboxMessages
+    .filter((m) => newLabelThreadIdsSet.has(m.threadId))
+    .map((m) => m.id);
 }

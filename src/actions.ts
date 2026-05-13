@@ -1,4 +1,4 @@
-import { archiveThreads } from './archive';
+import { archiveMessages } from './archive';
 import cards from './cards';
 import Log, { withErrorLogging } from './logger';
 import { clearState, loadProps, saveSettings } from './properties';
@@ -19,7 +19,7 @@ const handleClickClearState: ActionHandler = (
 
 const handleClickRunNow: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
-) => refreshHomepage(e, archiveThreads());
+) => refreshHomepage(e, archiveMessages());
 
 const handleClickRefresh: ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
@@ -149,13 +149,13 @@ const handleChangeEnableTimerTrigger: ActionHandler = (
   }
 
   Script.getProjectTriggers().forEach((t) => {
-    if (t.getHandlerFunction() === archiveThreads.name) {
+    if (t.getHandlerFunction() === archiveMessages.name) {
       Script.deleteTrigger(t);
     }
   });
 
   if (enableTimerTrigger) {
-    Script.newTrigger(archiveThreads.name)
+    Script.newTrigger(archiveMessages.name)
       .timeBased()
       .everyHours(settings.intervalHours)
       .create();
