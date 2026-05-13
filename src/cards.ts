@@ -1,5 +1,5 @@
 import actions from './actions';
-import { Gmail } from './archive';
+import { GmailClient } from './gmail';
 import { defaultEvaluationIntervalHours, loadProps } from './properties';
 
 const evaluationIntervalsHours = [1, 6, defaultEvaluationIntervalHours, 24];
@@ -47,12 +47,12 @@ function buildHomepage(userLocale?: string) {
         actions.handleChangeLabelIds.name,
       ),
     );
-  const userLabels = Gmail.getUserLabels().sort((a, b) =>
-    a.getName().localeCompare(b.getName(), userLocale),
+  const userLabels = GmailClient.getUserLabels().sort((a, b) =>
+    a.name.localeCompare(b.name, userLocale),
   );
   const labelIdsSet = new Set(settings.labelIds);
   userLabels.forEach((l) => {
-    labelSelect.addItem(l.getName(), l.getId(), labelIdsSet.has(l.getId()));
+    labelSelect.addItem(l.name, l.id, labelIdsSet.has(l.id));
   });
 
   // Interval selection

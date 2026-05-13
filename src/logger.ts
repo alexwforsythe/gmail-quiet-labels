@@ -1,9 +1,6 @@
 const actionsByFunctionName: Record<string, string> = {
-  // GmailApp
-  getUserLabels: 'get user labels',
-  search: 'search threads',
-  moveThreadsToArchive: 'archive threads',
   // GmailClient
+  getUserLabels: 'get user labels',
   getThread: 'search threads',
   listThreads: 'search threads',
   listMessages: 'search threads',
