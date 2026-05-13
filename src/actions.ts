@@ -1,5 +1,5 @@
+import { archiveThreads } from './archive';
 import cards from './cards';
-import { archiveThreads } from './gmail';
 import Log, { withErrorLogging } from './logger';
 import { clearState, loadProps, saveSettings } from './properties';
 

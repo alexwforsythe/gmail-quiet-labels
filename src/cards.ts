@@ -1,5 +1,5 @@
 import actions from './actions';
-import { Gmail } from './gmail';
+import { Gmail } from './archive';
 import { defaultEvaluationIntervalHours, loadProps } from './properties';
 
 const evaluationIntervalsHours = [1, 6, defaultEvaluationIntervalHours, 24];
