@@ -148,20 +148,26 @@ const handleChangeEnableTimerTrigger: ActionHandler = (
     return buildHomepageResponse(e.commonEventObject.userLocale);
   }
 
-  Script.getProjectTriggers().forEach((t) => {
-    if (t.getHandlerFunction() === archiveMessages.name) {
-      Script.deleteTrigger(t);
+  let { timerTriggerId } = settings;
+  if (timerTriggerId) {
+    for (const t of Script.getProjectTriggers()) {
+      if (t.getUniqueId() === timerTriggerId) {
+        Script.deleteTrigger(t);
+        break;
+      }
     }
-  });
+    timerTriggerId = undefined;
+  }
 
   if (enableTimerTrigger) {
-    Script.newTrigger(archiveMessages.name)
+    const trigger = Script.newTrigger(archiveMessages.name)
       .timeBased()
       .everyHours(settings.intervalHours)
       .create();
+    timerTriggerId = trigger.getUniqueId();
   }
 
-  saveSettings({ ...settings, enableTimerTrigger });
+  saveSettings({ ...settings, enableTimerTrigger, timerTriggerId });
 
   return buildHomepageResponse(
     e.commonEventObject.userLocale,

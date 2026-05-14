@@ -13,6 +13,7 @@ export interface Settings {
 
   // Timer trigger
   enableTimerTrigger: boolean;
+  timerTriggerId?: string;
   intervalHours: number;
 }
 
