@@ -1,4 +1,4 @@
-import { archiveMessages } from './archive';
+import { archiveMessages } from './archiver';
 import cards from './cards';
 import Log, { withErrorLogging } from './logger';
 import { clearState, loadProps, saveSettings } from './properties';
