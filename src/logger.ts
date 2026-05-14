@@ -1,9 +1,10 @@
 const actionsByFunctionName: Record<string, string> = {
   // GmailClient
   getUserLabels: 'get user labels',
-  getThread: 'search threads',
-  listThreads: 'search threads',
-  listMessages: 'search threads',
+  getThread: 'search inbox',
+  listThreads: 'search inbox',
+  getMessage: 'search inbox',
+  listMessages: 'search inbox',
   archiveMessages: 'archive messages',
   // PropertiesService
   setProperty: 'set user settings',

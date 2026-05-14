@@ -11,7 +11,7 @@ const listThreadsMaxBatchSize = 500;
 /**
  * The max number of messages that can be modified by {@link Gmail?.Users.Messages#batchModify}.
  */
-const archiveMessagesMaxBatchSize = 100;
+export const archiveMessagesMaxBatchSize = 100;
 
 export type Label = Required<
   Pick<GoogleAppsScript.Gmail.Schema.Label, 'id' | 'name'>
@@ -51,13 +51,9 @@ class GmailAdapter {
   }
 
   static getThread(id: string) {
-    const res = GmailAdapter.users.Threads.get('me', id, {
+    const thread = GmailAdapter.users.Threads.get('me', id, {
       format: 'metadata',
     });
-    const thread = {
-      id: res.id,
-      messages: res.messages,
-    };
     Log.debug('getThread', { id, thread });
 
     const newestMessageDate = thread.messages?.length
@@ -73,100 +69,87 @@ class GmailAdapter {
     };
   }
 
-  static listThreads(
-    q: string,
-    shouldContinue?: (
-      res: GoogleAppsScript.Gmail.Schema.ListThreadsResponse,
-    ) => boolean,
-  ) {
+  static listThreads(q: string, pageToken?: string) {
     const maxResults = listThreadsMaxBatchSize;
 
-    const threads: Thread[] = [];
-    let pageToken: string | undefined;
-    do {
-      const res = GmailAdapter.users.Threads.list('me', {
-        q,
-        maxResults,
-        pageToken,
-        // labelIds: ['INBOX', labelId], // Doesn't work
-        // labelIds: ['INBOX'], // Works
-        // labelIds: [labelId], // Works
-      });
-      pageToken = res.nextPageToken;
+    const res = GmailAdapter.users.Threads.list('me', {
+      q,
+      maxResults,
+      pageToken,
+      // labelIds: ['INBOX', labelId], // Doesn't work
+      // labelIds: ['INBOX'], // Works
+      // labelIds: [labelId], // Works
+    });
+    Log.debug('listThreads', { q, maxResults, pageToken, res });
 
-      for (const t of res.threads ?? []) {
-        if (t.id) {
-          threads.push({ id: t.id });
-        }
-      }
-
-      Log.debug('listThreads', { q, maxResults, pageToken, res });
-
-      if (shouldContinue && !shouldContinue(res)) {
-        break;
-      }
-    } while (pageToken);
-
-    return threads;
-  }
-
-  static listMessages(
-    q: string,
-    shouldContinue?: (
-      res: GoogleAppsScript.Gmail.Schema.ListMessagesResponse,
-    ) => boolean,
-  ) {
-    const maxResults = listMessagesMaxBatchSize;
-
-    const messages: Message[] = [];
-    let pageToken: string | undefined;
-    do {
-      const res = GmailAdapter.users.Messages.list('me', {
-        q,
-        maxResults,
-        pageToken,
-        // labelIds: ['INBOX', labelId], // Doesn't work
-        // labelIds: ['INBOX'], // Doesn't work with 'label' operator
-        // labelIds: [labelId], // Works with 'after' operator
-      });
-      pageToken = res.nextPageToken;
-
-      for (const m of res.messages ?? []) {
-        if (m.id && m.threadId) {
-          messages.push({ id: m.id, threadId: m.threadId });
-        }
-      }
-
-      Log.debug('listMessages', { q, maxResults, pageToken, res });
-      if (shouldContinue && !shouldContinue(res)) {
-        break;
-      }
-    } while (pageToken);
-
-    return messages;
-  }
-
-  static archiveMessages(
-    messageIds: string[],
-    shouldContinue?: (archivedCount: number) => boolean,
-  ) {
-    for (let i = 0; i < messageIds.length; i += archiveMessagesMaxBatchSize) {
-      const batch = messageIds.slice(i, i + archiveMessagesMaxBatchSize);
-      GmailAdapter.users.Messages.batchModify(
-        { ids: messageIds, removeLabelIds: ['INBOX'] },
-        'me',
-      );
-      const archivedCount = i + batch.length;
-      Log.info('archiveMessages', {
-        batch,
-        archivedCount,
-        remaining: messageIds.length - archivedCount,
-      });
-
-      if (shouldContinue && !shouldContinue(archivedCount)) {
-        break;
+    const threadIds: string[] = [];
+    for (const t of res.threads ?? []) {
+      if (t.id) {
+        threadIds.push(t.id);
       }
     }
+
+    return {
+      threadIds,
+      nextPageToken: res.nextPageToken,
+    };
+  }
+
+  static getMessage(id: string) {
+    const message = GmailAdapter.users.Messages.get('me', id, {
+      format: 'metadata',
+    });
+    Log.debug('getMessage', { id, message });
+
+    const internalDate = message.internalDate;
+    if (!internalDate) {
+      throw new Error('Failed to determine internal date for message');
+    }
+
+    return {
+      id,
+      internalDateMs: parseInt(internalDate),
+    };
+  }
+
+  static listMessages(q: string, pageToken?: string) {
+    const maxResults = listMessagesMaxBatchSize;
+
+    const res = GmailAdapter.users.Messages.list('me', {
+      q,
+      maxResults,
+      pageToken,
+      // labelIds: ['INBOX', labelId], // Doesn't work
+      // labelIds: ['INBOX'], // Doesn't work with 'label' operator
+      // labelIds: [labelId], // Works with 'after' operator
+    });
+    Log.debug('listMessages', { q, maxResults, pageToken, res });
+
+    const messages: Message[] = [];
+    for (const m of res.messages ?? []) {
+      if (m.id && m.threadId) {
+        messages.push({ id: m.id, threadId: m.threadId });
+      }
+    }
+
+    return {
+      messages,
+      nextPageToken: res.nextPageToken,
+    };
+  }
+
+  static archiveMessages(messageIds: string[]) {
+    if (messageIds.length > archiveMessagesMaxBatchSize) {
+      throw new Error(
+        `Invalid argument: messageIds.length should be <= ${archiveMessagesMaxBatchSize}`,
+      );
+    }
+
+    GmailAdapter.users.Messages.batchModify(
+      { ids: messageIds, removeLabelIds: ['INBOX'] },
+      'me',
+    );
+    Log.debug('archiveMessages', { messageIds });
   }
 }
 
