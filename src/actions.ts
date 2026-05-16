@@ -1,10 +1,8 @@
 import { archiveMessages } from './archiver';
 import cards from './cards';
-import Log, { withErrorLogging } from './logger';
+import Log from './logger';
+import { createTimerTrigger, deleteTimerTrigger } from './triggers';
 import { clearState, loadProps, saveSettings } from './properties';
-
-// eslint-disable-next-line no-restricted-globals
-const Script = withErrorLogging(ScriptApp);
 
 type ActionHandler = (
   e: GoogleAppsScript.Addons.EventObject,
@@ -54,7 +52,9 @@ const handleChangeLabelIds: ActionHandler = (
   const { formInputs: form } = commonEventObject;
   const labelIds = form.labelIds?.stringInputs?.value ?? [];
 
-  saveSettings({ ...settings, labelIds });
+  settings.labelIds = labelIds;
+  saveSettings(settings);
+
   return buildHomepageResponse(e.commonEventObject.userLocale);
 };
 
@@ -79,7 +79,10 @@ const handleChangeIntervalHours: ActionHandler = (
     return buildHomepageResponse(e.commonEventObject.userLocale);
   }
 
-  saveSettings({ ...settings, intervalHours });
+  settings.intervalHours = intervalHours;
+  settings.timerTriggerId = createTimerTrigger(settings);
+  saveSettings(settings);
+
   return buildHomepageResponse(e.commonEventObject.userLocale);
 };
 
@@ -95,7 +98,9 @@ const handleChangeExcludeRead: ActionHandler = (
     return buildHomepageResponse(e.commonEventObject.userLocale);
   }
 
-  saveSettings({ ...settings, excludeRead });
+  settings.excludeRead = excludeRead;
+  saveSettings(settings);
+
   return buildHomepageResponse(e.commonEventObject.userLocale);
 };
 
@@ -113,7 +118,9 @@ const handleChangeExcludeImportant: ActionHandler = (
     return buildHomepageResponse(e.commonEventObject.userLocale);
   }
 
-  saveSettings({ ...settings, excludeImportant });
+  settings.excludeImportant = excludeImportant;
+  saveSettings(settings);
+
   return buildHomepageResponse(e.commonEventObject.userLocale);
 };
 
@@ -129,7 +136,9 @@ const handleChangeExcludeStarred: ActionHandler = (
     return buildHomepageResponse(e.commonEventObject.userLocale);
   }
 
-  saveSettings({ ...settings, excludeStarred });
+  settings.excludeStarred = excludeStarred;
+  saveSettings(settings);
+
   return buildHomepageResponse(e.commonEventObject.userLocale);
 };
 
@@ -138,40 +147,27 @@ const handleChangeEnableTimerTrigger: ActionHandler = (
 ) => {
   const { commonEventObject } = e;
   const { formInputs: form } = commonEventObject;
-  const enableTimerTrigger = Boolean(
-    form.enableTimerTrigger?.stringInputs?.value[0],
-  );
+  const enabled = Boolean(form.enableTimerTrigger?.stringInputs?.value[0]);
 
   const { settings } = loadProps();
-  if (settings.enableTimerTrigger === enableTimerTrigger) {
+  if (enabled === settings.enableTimerTrigger) {
     Log.warn('enableTimerTrigger unchanged, skipping handler');
     return buildHomepageResponse(e.commonEventObject.userLocale);
   }
 
-  let { timerTriggerId } = settings;
-  if (timerTriggerId) {
-    for (const t of Script.getProjectTriggers()) {
-      if (t.getUniqueId() === timerTriggerId) {
-        Script.deleteTrigger(t);
-        break;
-      }
-    }
-    timerTriggerId = undefined;
+  if (enabled) {
+    settings.enableTimerTrigger = true;
+    settings.timerTriggerId = createTimerTrigger(settings);
+  } else {
+    deleteTimerTrigger(settings.timerTriggerId);
+    settings.enableTimerTrigger = false;
+    settings.timerTriggerId = undefined;
   }
-
-  if (enableTimerTrigger) {
-    const trigger = Script.newTrigger(archiveMessages.name)
-      .timeBased()
-      .everyHours(settings.intervalHours)
-      .create();
-    timerTriggerId = trigger.getUniqueId();
-  }
-
-  saveSettings({ ...settings, enableTimerTrigger, timerTriggerId });
+  saveSettings(settings);
 
   return buildHomepageResponse(
     e.commonEventObject.userLocale,
-    `Schedule ${enableTimerTrigger ? 'enabled' : 'disabled'}.`,
+    `Schedule ${enabled ? 'enabled' : 'disabled'}.`,
   );
 };
 

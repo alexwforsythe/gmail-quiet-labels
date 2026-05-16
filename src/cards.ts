@@ -1,8 +1,7 @@
 import actions from './actions';
 import { GmailClient } from './gmail';
-import { defaultEvaluationIntervalHours, loadProps } from './properties';
+import { loadProps, timerTriggerIntervalHours } from './properties';
 
-const evaluationIntervalsHours = [1, 6, defaultEvaluationIntervalHours, 24];
 const helpLink = 'https://www.alexwforsythe.com/gmail-quiet-labels/';
 
 type CardConstructor = (
@@ -35,7 +34,12 @@ function newCardBuilder() {
 }
 
 function buildHomepage(userLocale?: string) {
-  const { settings, state } = loadProps();
+  const userLabels = GmailClient.getUserLabels().sort((a, b) =>
+    a.name.localeCompare(b.name, userLocale),
+  );
+
+  const validLabelIds = new Set(userLabels.map((l) => l.id));
+  const { settings, state } = loadProps(validLabelIds);
 
   // Label selection
   const labelSelect = CardService.newSelectionInput()
@@ -47,9 +51,6 @@ function buildHomepage(userLocale?: string) {
         actions.handleChangeLabelIds.name,
       ),
     );
-  const userLabels = GmailClient.getUserLabels().sort((a, b) =>
-    a.name.localeCompare(b.name, userLocale),
-  );
   const labelIdsSet = new Set(settings.labelIds);
   userLabels.forEach((l) => {
     labelSelect.addItem(l.name, l.id, labelIdsSet.has(l.id));
@@ -65,7 +66,7 @@ function buildHomepage(userLocale?: string) {
         actions.handleChangeIntervalHours.name,
       ),
     );
-  evaluationIntervalsHours.forEach((h) => {
+  timerTriggerIntervalHours.forEach((h) => {
     intervalSelect.addItem(
       `${h} hour${h > 1 ? 's' : ''}`,
       h.toString(),
@@ -220,7 +221,8 @@ function buildErrorCard(err: unknown) {
         .addWidget(
           CardService.newDecoratedText()
             .setTopLabel('Reason')
-            .setText(err instanceof Error ? err.message : 'Failed to load.'),
+            .setText(err instanceof Error ? err.message : 'Failed to load.')
+            .setWrapText(true),
         ),
     )
     .setFixedFooter(
