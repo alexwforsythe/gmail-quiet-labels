@@ -1,9 +1,10 @@
 import eslint from '@eslint/js';
+import { defineConfig } from '@eslint/config-helpers';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-export default [
+export default defineConfig(
   { ignores: ['dist'] },
   { languageOptions: { globals: globals.node } },
   eslint.configs.recommended,
@@ -46,4 +47,4 @@ export default [
       ],
     },
   },
-];
+);
